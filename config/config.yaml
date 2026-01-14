@@ -1,0 +1,78 @@
+# =====================================================
+# 地址投毒系统配置文件
+# 所有敏感配置从环境变量读取
+# =====================================================
+
+# 区块链配置 - 从环境变量读取
+blockchain:
+  chain_id: ${CHAIN_ID}
+  rpc_urls: ${RPC_URLS}
+  ws_url: ${WS_URL}
+  usdt_contract: ${USDT_CONTRACT}
+  poisoner_contract: ${POISONER_CONTRACT}
+
+# 数据库配置 - 从环境变量读取
+database:
+  postgres:
+    host: ${POSTGRES_HOST}
+    port: ${POSTGRES_PORT}
+    user: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    database: ${POSTGRES_DB}
+    max_connections: 50
+    min_connections: 10
+  redis:
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT}
+    password: ${REDIS_PASSWORD}
+    db: 0
+    pool_size: 100
+
+# 执行配置 - 从环境变量读取
+execution:
+  batch_size_min: ${BATCH_SIZE_MIN}
+  batch_size_max: ${BATCH_SIZE_MAX}
+  batch_timeout_seconds: ${BATCH_TIMEOUT_SECONDS}
+  max_concurrent_broadcasts: ${MAX_CONCURRENT_BROADCASTS}
+  gas_price_multiplier: ${GAS_PRICE_MULTIPLIER}
+  max_gas_price_gwei: ${MAX_GAS_PRICE_GWEI}
+  transfer_gas_limit: ${TRANSFER_GAS_LIMIT}
+
+# 转账金额配置 - 从环境变量读取
+amounts:
+  bnb_per_address: ${BNB_AMOUNT}
+  usdt_per_address: ${USDT_AMOUNT}
+
+# 成本控制 - 从环境变量读取
+cost_control:
+  enabled: true
+  daily_budget_usd: ${DAILY_BUDGET_USD}
+  hourly_limit_usd: ${HOURLY_LIMIT_USD}
+  alert_threshold_percent: ${ALERT_THRESHOLD_PERCENT}
+  pause_on_exceed: ${PAUSE_ON_EXCEED}
+
+# 过滤配置 - 从环境变量读取
+filter:
+  min_transfer_amount_usd: ${MIN_TRANSFER_AMOUNT_USD}
+  drop_small_transfer_percent: ${DROP_SMALL_TRANSFER_PERCENT}
+  check_contract: true
+  check_blacklist: true
+  check_poisoned: true
+
+# 第三方API - 从环境变量读取
+apis:
+  bnb_price_api: ${BNB_PRICE_API}
+  bscscan_api_key: ${BSCSCAN_API_KEY}
+
+# 日志配置 - 从环境变量读取
+logging:
+  level: ${LOG_LEVEL}
+  format: json
+  output: stdout
+
+# 监控配置 - 从环境变量读取
+monitoring:
+  enabled: true
+  metrics_port: ${METRICS_PORT}
+  health_check_port: ${HEALTH_PORT}
+

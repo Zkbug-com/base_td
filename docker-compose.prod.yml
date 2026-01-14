@@ -1,0 +1,111 @@
+# 生产环境配置
+# 使用方法: docker compose -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: poison_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-poison_db}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-poison_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5432:5432"  # 只绑定本地
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-poison_db} -d ${POSTGRES_DB:-poison_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 120G
+        reservations:
+          memory: 64G
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=16GB"
+      - "-c"
+      - "effective_cache_size=32GB"
+      - "-c"
+      - "work_mem=1GB"
+      - "-c"
+      - "maintenance_work_mem=2GB"
+      - "-c"
+      - "statement_timeout=0"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "log_min_duration_statement=1000"
+
+  core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: poison_core
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - LOG_LEVEL=info
+      - EXPORT_PATH=/app/export
+    volumes:
+      - /root/bsc-test/exploit:/app/export  # 导出目录挂载到宿主机
+    ports:
+      - "0.0.0.0:8083:8083"   # Web监控 (对外开放)
+      - "127.0.0.1:9090:9090"   # Metrics (只绑定本地)
+    deploy:
+      resources:
+        limits:
+          memory: 125G
+        reservations:
+          memory: 125G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  generator:
+    build:
+      context: ./generator
+      dockerfile: Dockerfile
+    container_name: poison_generator
+    restart: "no"  # 手动启动生成地址
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-poison_db}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-poison_db}
+      - MASTER_KEY=${GENERATOR_MASTER_KEY}
+      - RUST_LOG=info
+    deploy:
+      resources:
+        limits:
+          cpus: "32"
+          memory: 10G
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
